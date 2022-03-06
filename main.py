@@ -27,6 +27,7 @@ class Bot:
         self.status_t1 = False
         self.bot = None
         self.target_location = None
+        self.last_move = None
         self.t1 = Thread(target=self.find_path)
 
     def move(self, direction):
@@ -129,15 +130,19 @@ class Bot:
             print(f"Moving to {x, y}")
             if x < current_x:
                 self.move("left")
+                self.last_move = "left"
 
             if x > current_x:
                 self.move("right")
+                self.last_move = "right"
 
             if y < current_y:
                 self.move("up")
+                self.last_move = "up"
 
             if y > current_y:
                 self.move("down")
+                self.last_move = "down"
 
             current_x, current_y = x, y
             time.sleep(0.5)
@@ -178,6 +183,23 @@ class Bot:
         cords = (self.bot_cords[0] - cords[0], self.bot_cords[1] - cords[1])
         return cords
 
+    def get_drops(self):
+        drop_list = ImageRecognition.get_drops()
+        return drop_list
+
+    def collect_drops(self, drops):
+        count = 0
+        if len(drops) > 0:
+            for x, y in drops:
+                count += 1
+                win32api.SetCursorPos((x + 5, y + 5))
+                time.sleep(0.1)
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)  # Press mouse down
+                time.sleep(0.1)  # Wait for the game to register the click
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)  # Release mouse
+                if count > 15:
+                    return
+
 
 def run_bot():
     bot = Bot()
@@ -203,6 +225,15 @@ def run_bot():
                     print(f"Found target: {entity_cords} and adding start and end location")
                     print(f"Bot cords: {bot.bot_cords}")
                     if bot.bot_cords[0] == entity_cords[0] and bot.bot_cords[1] == entity_cords[1]:
+                        print(f"Making last move: {bot.last_move}")
+                        if bot.last_move == "right":
+                            bot.move("left")
+                        if bot.last_move == "left":
+                            bot.move("right")
+                        if bot.last_move == "up":
+                            bot.move("down")
+                        if bot.last_move == "down":
+                            bot.move("up")
                         continue
                     if bot.add_start(bot.bot_cords[0], bot.bot_cords[1]) == 1 and bot.add_end(entity_cords[0], entity_cords[1]) == 1:
                         print("Added start")
@@ -250,11 +281,16 @@ def run_bot():
             while attack:
                 print("Attacking enemy")
                 bot.attack(2)
-                finished = True
+                collect = True
                 attack = False
 
             while collect:
-                pass
+                drops = bot.get_drops()
+                print(f"Collecting loot: {drops}")
+                if drops:
+                    bot.collect_drops(drops)
+                finished = True
+                collect = False
 
             if finished:
                 print("Finished cycle")
