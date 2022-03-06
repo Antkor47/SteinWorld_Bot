@@ -1,5 +1,5 @@
 import pyautogui
-
+import canvas
 
 def get_targets():
     list_of_targets = []
@@ -35,3 +35,8 @@ def get_drops():
     print(f"found {list_of_drops}")
     return list_of_drops
 # Box(left=550, top=504, width=52, height=14)
+
+if __name__ == "__main__":
+    print(get_targets())
+    canvas = canvas.Overlay()
+    canvas.draw(get_targets())
